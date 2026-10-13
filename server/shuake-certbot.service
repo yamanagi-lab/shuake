@@ -1,0 +1,6 @@
+[Unit]
+Description=续期段评后台的 IP 证书
+
+[Service]
+Type=oneshot
+ExecStart=/opt/certbot/bin/certbot renew -q

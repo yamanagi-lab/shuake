@@ -1,0 +1,129 @@
+/* 段评：句末标签 + 右侧评论面板（手机上从底部弹出） */
+
+/* 句末标签：斜切小框，数字用伪元素画，不混进复制和搜索的文字里 */
+.ck {
+  position: relative;
+  isolation: isolate;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.8em;
+  height: 1.32em;
+  margin: 0 0 0 .5em;
+  padding: 0 .42em;
+  border: 0;
+  background: none;
+  color: var(--ink-soft);
+  font: 700 .68rem/1 "Helvetica Neue", Arial, sans-serif;
+  font-variant-numeric: tabular-nums;
+  vertical-align: .14em;
+  cursor: pointer;
+  transition: opacity .15s, color .15s;
+}
+.ck::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border: 1px solid currentColor;
+  transform: skewX(-12deg);
+  transition: background-color .15s, border-color .15s;
+}
+.ck::after { content: attr(data-n); }
+.ck[data-n="0"]::after { content: "+"; font-size: 1.2em; }
+.ck:hover, .ck:focus-visible { color: var(--red); outline: none; }
+.ck.hot { color: #fff; }
+.ck.hot::before { background: var(--red-fixed); border-color: var(--red-fixed); }
+.ck.hot:hover::before, .ck.hot:focus-visible::before { background: #000; border-color: #000; }
+.opt-line .ck { margin-left: 0; }
+.msg .ck { color: inherit; }
+.msg .ck:hover { color: inherit; opacity: .7; }
+
+/* 同一个评论区的两个标签：对照/中文模式显示中文句末那个，日本語模式显示日文句末那个 */
+.ck-alt { display: none; }
+.mode-ja .ck-alt { display: inline-flex; }
+.mode-ja .ck-zh { display: none; }
+.hide-ck .ck { display: none !important; }
+
+/* 没有评论的句子平时不显示，悬停或点一下句子才出现「＋」 */
+.ck[data-n="0"] { opacity: 0; }
+.row:hover .ck, .opt-line:hover .ck, .msg:hover .ck, .msg-dir:hover .ck,
+.ck-on .ck, .ck-active .ck, .ck:focus-visible { opacity: 1; }
+.ck-on > .ln, .ck-on > .grp { background: var(--hl); box-shadow: 0 0 0 .3rem var(--hl); }
+
+/* 正在看评论的那一句：日文和中文一起高亮 */
+.ck-active > .ln, .ck-active > .grp,
+.mode-pair .row.ck-active:hover > .ln, .mode-pair .row.ck-active:hover > .grp { background: var(--mark); box-shadow: 0 0 0 .3rem var(--mark); }
+.opt-line.ck-active { outline: 2px solid var(--red); outline-offset: .35rem; }
+.msg.ck-active, .msg-dir.ck-active { outline: 2px dashed #fff; outline-offset: .3rem; }
+
+/* 评论面板 */
+.cmt { width: min(27rem, 92vw); padding: 1.1rem 1.4rem 1rem; gap: .9rem; }
+.cmt[open] { display: flex; flex-direction: column; }
+.cmt::backdrop { background: rgba(10, 10, 10, .3); }
+.cmt-head { display: flex; align-items: center; gap: .7rem; }
+.cmt-head h2 { margin: 0; font-family: var(--serif-zh); font-size: 1.4rem; }
+.cmt-n { margin-left: .35rem; font-family: var(--sans-zh); font-size: .95rem; color: var(--red); }
+.cmt-head form { margin-left: auto; }
+.cmt-quote { margin: 0; padding: .6rem .9rem .65rem; border-left: 4px solid var(--red); background: var(--panel); font-size: .9rem; line-height: 1.65; }
+.cmt-who { display: block; margin-bottom: .15rem; color: var(--ink-soft); font-size: .74rem; font-weight: 700; }
+.cmt-who:empty { display: none; }
+.cmt-quote p { margin: 0; }
+.cmt-quote [lang="zh-CN"] { margin-top: .2rem; color: var(--ink-soft); }
+.cmt-list { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; list-style: none; margin: 0 -1.4rem; padding: 0 1.4rem; }
+.cmt-item { padding: .75rem 0; border-bottom: 1px solid var(--rule); }
+.cmt-meta { display: flex; align-items: baseline; gap: .55rem; margin: 0 0 .2rem; font-size: .78rem; color: var(--ink-soft); }
+.cmt-name { color: var(--ink); font-weight: 700; }
+.cmt-name.anon { color: var(--ink-soft); font-weight: 600; }
+.cmt-mine { padding: 0 .35rem; background: var(--choice-bg); color: var(--choice-fg); font-size: .68rem; line-height: 1.5; }
+.cmt-pending { padding: 0 .35rem; border: 1px dashed var(--ink-soft); color: var(--ink-soft); font-size: .68rem; line-height: 1.4; }
+.cmt-item:has(.cmt-pending) .cmt-text { color: var(--ink-soft); }
+.cmt-hp { position: absolute; left: -9999px; width: 1px; height: 1px; opacity: 0; }
+.cmt-meta time { margin-left: auto; font-size: .74rem; }
+.cmt-text { margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; line-height: 1.7; }
+.cmt-empty, .cmt-loading { padding: 2.4rem 0; color: var(--ink-soft); text-align: center; font-size: .9rem; }
+.cmt-form { display: grid; gap: .5rem; padding-top: .85rem; border-top: 2px solid var(--choice-bg); }
+.cmt-form input, .cmt-form textarea {
+  width: 100%;
+  padding: .45rem .6rem;
+  border: 1px solid var(--rule);
+  border-radius: 0;
+  background: var(--sheet);
+  color: var(--ink);
+  font: inherit;
+  font-size: .92rem;
+}
+.cmt-form input:focus, .cmt-form textarea:focus { outline: none; border-color: var(--choice-bg); box-shadow: 3px 3px 0 var(--red); }
+.cmt-form textarea { min-height: 4.8rem; max-height: 40vh; resize: vertical; line-height: 1.6; }
+.cmt-actions { display: flex; align-items: center; gap: .8rem; }
+.cmt-tip { flex: 1; color: var(--ink-soft); font-size: .72rem; }
+.cmt-tip.flash-tip { color: var(--ink); font-weight: 700; }
+.cmt-tip.bad { color: var(--red); }
+.cmt-count { color: var(--ink-soft); font-size: .72rem; font-variant-numeric: tabular-nums; }
+.cmt-send { position: relative; isolation: isolate; padding: .32rem 1.4rem; border: 0; background: none; color: var(--choice-fg); font-weight: 700; cursor: pointer; }
+.cmt-send::before { content: ""; position: absolute; inset: 0; z-index: -1; background: var(--choice-bg); transform: skewX(-12deg); transition: background-color .15s; }
+.cmt-send:not(:disabled):hover, .cmt-send:focus-visible { color: #fff; outline: none; }
+.cmt-send:not(:disabled):hover::before, .cmt-send:focus-visible::before { background: var(--red); }
+.cmt-send:disabled { opacity: .35; cursor: default; }
+@media (prefers-reduced-motion: no-preference) {
+  .cmt-item.new { animation: cmt-new .45s var(--ease-out); }
+  @keyframes cmt-new { from { opacity: 0; transform: translateX(1.2rem); background: var(--mark); } }
+}
+
+@media (max-width: 760px) {
+  .cmt {
+    inset: auto 0 0 0;
+    width: 100%;
+    max-width: 100%;
+    height: 84dvh;
+    padding: 1rem 16px calc(.8rem + env(safe-area-inset-bottom));
+    border-left: 0;
+    border-top: 3px solid var(--choice-bg);
+  }
+  .cmt-list { margin: 0 -16px; padding: 0 16px; }
+  .cmt-form input, .cmt-form textarea { font-size: 16px; }
+  @media (prefers-reduced-motion: no-preference) {
+    .cmt[open] { animation: cmt-up .38s var(--ease-out); }
+    @keyframes cmt-up { from { transform: translateY(100%); } }
+  }
+}

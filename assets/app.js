@@ -363,12 +363,16 @@
     return `<section class="choice${hasResp ? ' collapsed' : ''}" id="${id}" aria-label="55 的选项"><p class="choice-head">${head}</p>${intro}<ol class="opts">${opts}</ol></section>`;
   }
 
+  const SNS_TILT = [-1.1, .8, -.5, 1.2, -.8, .5];
+  const SNS_LOGO = [['S', 'v-paper', -7], ['N', 'v-ink', 5], ['S', 'v-paper', -3]]
+    .map(([c, v, r], i) => `<span class="tile ${v}" style="--r:${r}deg;--i:${i}">${c}</span>`).join('');
+
   function snsHTML(b, id) {
     const msgs = b.msgs.map((m, k) => m.dir
       ? `<div class="msg-dir">${m.ja ? `<p lang="ja"${m.zh ? ' class="peek"' : ''}>${esc(m.ja)}</p>` : ''}${m.zh ? `<p lang="zh-CN"${m.ja ? '' : ' class="keep"'}>${esc(m.zh)}</p>` : ''}</div>`
       :
-      `<div class="msg${m.me ? ' me' : ''}" style="--i:${k}"><p lang="ja"${m.zh ? ' class="peek"' : ''}>${esc(m.ja)}</p>${m.zh ? `<p lang="zh-CN">${esc(m.zh)}</p>` : ''}</div>`).join('');
-    return `<section class="sns${motionOK() ? ' anim' : ''}" id="${id}" aria-label="SNS 消息"><p class="sns-head">SNS<small>${esc(b.from)}</small></p><div class="sns-log">${msgs}</div></section>`;
+      `<div class="msg${m.me ? ' me' : ''}" style="--i:${k};--rot:${SNS_TILT[k % SNS_TILT.length]}deg"><span class="msg-shape" aria-hidden="true"></span><p lang="ja"${m.zh ? ' class="peek"' : ''}>${esc(m.ja)}</p>${m.zh ? `<p lang="zh-CN">${esc(m.zh)}</p>` : ''}</div>`).join('');
+    return `<section class="sns${motionOK() ? ' anim' : ''}" id="${id}" aria-label="SNS 消息"><p class="sns-head"><span class="sns-logo" aria-hidden="true">${SNS_LOGO}</span><span class="visually-hidden">SNS：</span><span class="sns-from">${esc(b.from)}</span></p><div class="sns-log">${msgs}</div></section>`;
   }
 
   function summaryHTML(b, id, ctx) {
@@ -696,6 +700,7 @@
     applyReaderPrefs(reader);
     bindReader(reader, idx);
     watchReader(reader, meta);
+    if (window.Comments) cleanups.push(window.Comments.mount(reader, meta));
     document.title = `${meta.title}｜${SITE}`;
     if (anchor) jumpTo(anchor);
     else {

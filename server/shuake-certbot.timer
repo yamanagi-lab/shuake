@@ -1,0 +1,10 @@
+[Unit]
+Description=每 6 小时检查一次证书是否需要续期（证书有效期约 6 天）
+
+[Timer]
+OnCalendar=*-*-* 00/6:17:00
+RandomizedDelaySec=20min
+Persistent=true
+
+[Install]
+WantedBy=timers.target

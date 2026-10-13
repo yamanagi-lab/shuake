@@ -1,0 +1,213 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>段评审核</title>
+<style>
+  :root {
+    --desk: #ECECE9; --sheet: #FAFAF8; --ink: #232323; --soft: #66666A; --rule: #CACAC5; --panel: #E3E3DF;
+    --red: #C8102E; --fill: #000; --on-fill: #fff;
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --desk: #151515; --sheet: #1D1D1C; --ink: #E6E6E2; --soft: #A2A29E; --rule: #3A3A38; --panel: #292927; --red: #FF5263; --fill: #F2F2F0; --on-fill: #000; color-scheme: dark; }
+  }
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  body { margin: 0; background: var(--desk); color: var(--ink); font: 16px/1.7 "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif; }
+  [lang="ja"] { font-family: "Hiragino Sans", "Yu Gothic", Meiryo, sans-serif; }
+  main { max-width: 46rem; margin: 0 auto; padding: 1.5rem 16px 4rem; }
+  h1 { margin: 0 0 1rem; font-size: 1.5rem; display: flex; align-items: baseline; gap: .8rem; }
+  h1 small { font-size: .8rem; color: var(--soft); font-weight: 400; }
+  button { font: inherit; cursor: pointer; }
+  .btn { position: relative; isolation: isolate; border: 0; background: none; color: var(--on-fill); padding: .25rem 1rem; font-size: .88rem; font-weight: 700; }
+  .btn::before { content: ""; position: absolute; inset: 0; z-index: -1; background: var(--fill); transform: skewX(-12deg); }
+  .btn:hover::before, .btn:focus-visible::before { background: var(--red); }
+  .btn:hover, .btn:focus-visible { color: #fff; outline: none; }
+  .btn.red::before { background: var(--red); }
+  .btn.red { color: #fff; }
+  .plain { border: 1px solid var(--rule); background: var(--sheet); color: var(--ink); padding: .2rem .8rem; font-size: .85rem; }
+  .plain:hover { border-color: var(--red); color: var(--red); }
+  .login { background: var(--sheet); border: 2px solid var(--fill); padding: 1.4rem; display: grid; gap: .8rem; max-width: 22rem; }
+  .login input { font: inherit; padding: .5rem .7rem; border: 1px solid var(--rule); background: var(--sheet); color: var(--ink); border-radius: 0; }
+  .msg { color: var(--red); font-size: .85rem; min-height: 1.2em; margin: 0; }
+  .bar { display: flex; flex-wrap: wrap; gap: .5rem; align-items: center; margin-bottom: 1rem; }
+  .tabs { display: flex; border: 2px solid var(--fill); }
+  .tabs button { border: 0; background: var(--sheet); color: var(--ink); padding: .2rem .9rem; font-size: .9rem; }
+  .tabs button[aria-pressed="true"] { background: var(--fill); color: var(--on-fill); }
+  .tabs b { font-weight: 400; opacity: .7; margin-left: .25rem; }
+  .bar .sp { flex: 1; }
+  ol { list-style: none; margin: 0; padding: 0; display: grid; gap: .8rem; }
+  .item { background: var(--sheet); border: 1px solid var(--rule); border-left: 4px solid var(--fill); padding: .8rem 1rem .9rem; }
+  .item.done { opacity: .45; }
+  .where { display: flex; flex-wrap: wrap; gap: .3rem .8rem; font-size: .78rem; color: var(--soft); }
+  .where a { color: var(--red); }
+  .quote { margin: .35rem 0 .6rem; padding: .35rem .7rem; background: var(--panel); font-size: .85rem; color: var(--soft); white-space: pre-wrap; }
+  .who { font-size: .82rem; color: var(--soft); display: flex; gap: .6rem; flex-wrap: wrap; }
+  .who b { color: var(--ink); }
+  .who .ban { color: var(--red); }
+  .text { margin: .15rem 0 .7rem; white-space: pre-wrap; overflow-wrap: anywhere; font-size: 1.02rem; }
+  .acts { display: flex; flex-wrap: wrap; gap: .5rem .9rem; align-items: center; }
+  .empty { text-align: center; color: var(--soft); padding: 3rem 0; }
+  .more { margin: 1rem auto 0; display: block; }
+</style>
+</head>
+<body>
+<main>
+  <h1>段评审核 <small>P5R主明文本收录</small></h1>
+
+  <form class="login" id="login" hidden>
+    <label for="pw">管理口令</label>
+    <input id="pw" type="password" autocomplete="current-password" required>
+    <button class="btn" type="submit">登录</button>
+    <p class="msg" id="login-msg" role="alert"></p>
+  </form>
+
+  <section id="app" hidden>
+    <div class="bar">
+      <div class="tabs" role="group" aria-label="状态">
+        <button type="button" data-status="pending">待审<b data-n="pending"></b></button>
+        <button type="button" data-status="approved">已通过<b data-n="approved"></b></button>
+        <button type="button" data-status="rejected">已拒绝<b data-n="rejected"></b></button>
+      </div>
+      <span class="sp"></span>
+      <button class="plain" type="button" id="refresh">刷新</button>
+      <button class="plain" type="button" id="all" hidden>本页全部通过</button>
+      <button class="plain" type="button" id="logout">退出</button>
+    </div>
+    <p class="msg" id="msg" role="status"></p>
+    <ol id="list"></ol>
+    <button class="plain more" type="button" id="more" hidden>加载更多</button>
+  </section>
+</main>
+<script>
+(() => {
+  const SITE = 'https://yamanagi-lab.github.io/shuake/';
+  const $ = s => document.querySelector(s);
+  let token = '';
+  try { token = localStorage.getItem('shuake-admin') || ''; } catch {}
+  let status = 'pending';
+  let items = [];
+
+  async function call(path, body) {
+    const r = await fetch(path, {
+      method: body ? 'POST' : 'GET',
+      headers: Object.assign({ 'Authorization': 'Bearer ' + token }, body ? { 'Content-Type': 'application/json' } : {}),
+      body: body ? JSON.stringify(body) : undefined,
+    });
+    const data = await r.json().catch(() => ({ ok: false, error: '服务器没有正常回应' }));
+    if (r.status === 401) { showLogin(data.error); throw new Error(data.error); }
+    if (!data.ok) throw new Error(data.error || '出错了');
+    return data;
+  }
+
+  function showLogin(text) {
+    token = '';
+    try { localStorage.removeItem('shuake-admin'); } catch {}
+    $('#app').hidden = true;
+    $('#login').hidden = false;
+    $('#login-msg').textContent = text || '';
+    $('#pw').focus();
+  }
+
+  $('#login').addEventListener('submit', async e => {
+    e.preventDefault();
+    $('#login-msg').textContent = '';
+    const r = await fetch('/api/admin/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ password: $('#pw').value }) });
+    const data = await r.json().catch(() => ({}));
+    if (!data.ok) { $('#login-msg').textContent = data.error || '登录失败'; return; }
+    token = data.token;
+    try { localStorage.setItem('shuake-admin', token); } catch {}
+    $('#pw').value = '';
+    $('#login').hidden = true;
+    load();
+  });
+
+  const fmt = t => { const d = new Date(t); const p = n => String(n).padStart(2, '0'); return `${d.getFullYear()}.${d.getMonth() + 1}.${d.getDate()} ${p(d.getHours())}:${p(d.getMinutes())}`; };
+
+  function el(tag, cls, text) { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
+
+  function render(append) {
+    const list = $('#list');
+    if (!append) list.replaceChildren();
+    if (!items.length) { list.append(el('li', 'empty', status === 'pending' ? '没有待审核的评论' : '这里是空的')); return; }
+    for (const c of append || items) {
+      const li = el('li', 'item');
+      li.dataset.id = c.id;
+      const where = el('div', 'where');
+      where.append(el('span', '', c.ch));
+      const a = el('a', '', '查看原文 ↗');
+      a.href = SITE + '#/read/' + encodeURIComponent(c.ch) + (c.anchor ? '/' + encodeURIComponent(c.anchor) : '');
+      a.target = '_blank';
+      a.rel = 'noopener noreferrer';
+      where.append(a);
+      li.append(where);
+      if (c.quote) li.append(el('div', 'quote', c.quote));
+      const who = el('div', 'who');
+      who.append(el('b', '', c.name || '匿名用户'), el('span', '', fmt(c.t)), el('span', '', '来源 ' + c.ip));
+      if (c.banned) who.append(el('span', 'ban', '已拉黑'));
+      li.append(who, el('p', 'text', c.text));
+      const acts = el('div', 'acts');
+      const btn = (label, action, cls) => { const b = el('button', cls || 'btn', label); b.type = 'button'; b.dataset.act = action; acts.append(b); };
+      if (status !== 'approved') btn('通过', 'approve', 'btn red');
+      if (status === 'pending') btn('拒绝', 'reject');
+      if (status === 'approved') btn('撤下', 'reject');
+      if (status !== 'pending') btn('删除', 'delete', 'plain');
+      btn(c.banned ? '解除拉黑' : '拉黑这个来源', c.banned ? 'unban' : 'ban', 'plain');
+      li.append(acts);
+      list.append(li);
+    }
+  }
+
+  async function load(more) {
+    $('#app').hidden = false;
+    $('#msg').textContent = '';
+    document.querySelectorAll('[data-status]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.status === status)));
+    $('#all').hidden = status !== 'pending';
+    try {
+      const last = more && items.length ? items[items.length - 1].id : '';
+      const data = await call(`/api/admin/list?status=${status}${last ? '&before=' + last : ''}`);
+      document.querySelectorAll('[data-n]').forEach(b => { b.textContent = data.stats[b.dataset.n] || 0; });
+      if (more) { items = items.concat(data.items); render(data.items); }
+      else { items = data.items; render(); }
+      $('#more').hidden = data.items.length < 100;
+      document.title = (data.stats.pending ? `(${data.stats.pending}) ` : '') + '段评审核';
+    } catch (err) { $('#msg').textContent = err.message; }
+  }
+
+  $('#list').addEventListener('click', async e => {
+    const b = e.target.closest('[data-act]');
+    if (!b) return;
+    const li = b.closest('.item');
+    const id = +li.dataset.id;
+    const action = b.dataset.act;
+    if (action === 'delete' && !confirm('删除后无法恢复，确定吗？')) return;
+    if (action === 'ban' && !confirm('拉黑后，这个来源以后发的评论都不会进待审列表，它现在待审的评论也会一起拒绝。确定吗？')) return;
+    li.querySelectorAll('button').forEach(x => { x.disabled = true; });
+    try {
+      await call('/api/admin/act', { ids: [id], action });
+      if (action === 'ban' || action === 'unban') load();
+      else li.classList.add('done');
+    } catch (err) {
+      $('#msg').textContent = err.message;
+      li.querySelectorAll('button').forEach(x => { x.disabled = false; });
+    }
+  });
+
+  $('#all').addEventListener('click', async () => {
+    const ids = [...document.querySelectorAll('.item:not(.done)')].map(li => +li.dataset.id);
+    if (!ids.length || !confirm(`通过本页 ${ids.length} 条评论？`)) return;
+    try { await call('/api/admin/act', { ids, action: 'approve' }); load(); } catch (err) { $('#msg').textContent = err.message; }
+  });
+  document.querySelectorAll('[data-status]').forEach(b => b.addEventListener('click', () => { status = b.dataset.status; load(); }));
+  $('#refresh').addEventListener('click', () => load());
+  $('#more').addEventListener('click', () => load(true));
+  $('#logout').addEventListener('click', async () => { try { await call('/api/admin/logout', {}); } catch {} showLogin(); });
+
+  if (token) load(); else showLogin();
+})();
+</script>
+</body>
+</html>

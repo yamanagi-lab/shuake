@@ -1,0 +1,14 @@
+[Unit]
+Description=P5R主明文本收录 段评数据库备份
+
+[Service]
+Type=oneshot
+User=shuake
+Group=shuake
+ExecStart=/usr/bin/python3 /opt/shuake/server.py backup
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=yes
+ReadWritePaths=/var/lib/shuake
+PrivateTmp=yes
+PrivateNetwork=yes
