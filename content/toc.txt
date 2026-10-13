@@ -1,0 +1,15 @@
+# 目录：每行一章，按阅读顺序排列，用 | 分隔各项。
+# 编号 | 日期 | 星期 | 时段 | 标题 | 地点 | 图标 | 正文文件（留空 = 尚未收录）
+# 以 # 开头的行会被忽略。
+
+shotaimen | 6.9 | 木曜日 | 午後 | 初対面 | TV Station | 📺 | 00-shotaimen.txt
+coop1 | 6.10 | 金曜日 | 午後 | coop1 | TV Station | 📺 | 01-coop1.txt
+coop2 | 6.25 | 土曜日 | 夜 | coop2 | Penguin Sniper | 🎱 | 02-coop2.txt
+coop3 | 6.29 | 水曜日 | 夜 | coop3 | Cafe | 👓 | 03-coop3.txt
+coop4 | 7.9 | 土曜日 | 夜 | coop4 | Jazz Jin | 🥂 | 04-coop4.txt
+coop5 | 7.19 | 火曜日 | 夜 | coop5 | Game Center | 🔫 | 05-coop5.txt
+aquarium | 7.29 | 金曜日 | 昼間 | 水族館 | Maxell Aqua Park | 🐟 | 06-aquarium.txt
+coop6 | 9.3 | 土曜日 | 夜 | coop6 | Fujimi-Yu | ♨️ | 07-coop6.txt
+coop7 | 11.2 | 水曜日 | 夜 | coop7 | Penguin Sniper | 🎯 | 08-coop7.txt
+coop8 | 11.4 | 金曜日 | 夜 | coop8 | Mementos | 🐈‍⬛ | 09-coop8.txt
+coop9-10 |  |  |  | coop9&10 | Shidou Palace | 🧤 | 10-coop9-10.txt
