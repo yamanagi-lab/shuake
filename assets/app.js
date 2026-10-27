@@ -207,10 +207,16 @@
 
   async function loadToc() {
     const text = await fetchText('content/toc.txt');
-    TOC = text.split(/\r?\n/).map(l => l.trim()).filter(l => l && !l.startsWith('#')).map(l => {
-      const [id, date, weekday, time, title, place, icon, file] = l.split('|').map(s => (s || '').trim());
-      return { id, date, weekday, time, title, place, icon, file };
-    });
+    // 「@三学期」以下的章节归入三学期日历，其余是二学期 coop 路线
+    let term = 'coop';
+    TOC = [];
+    for (const raw of text.split(/\r?\n/)) {
+      const l = raw.trim();
+      if (!l || l.startsWith('#')) continue;
+      if (l.startsWith('@')) { term = l.slice(1).trim() === '三学期' ? 's3' : 'coop'; continue; }
+      const [id, date, weekday, time, title, place, icon, file, weather, deco] = l.split('|').map(s => (s || '').trim());
+      TOC.push({ id, date, weekday, time, title, place, icon, file, weather, deco, term });
+    }
   }
 
   async function loadChapter(meta) {
@@ -258,6 +264,25 @@
 
   const mixCase = s => s.replace(/(?!^)[IA]/g, c => c.toLowerCase());
   const shortDate = meta => meta.date ? meta.date.replace('.', '/') : '';
+  // 三学期的章节没有标题，用「12/24（土）」代替
+  const titleOf = c => c.title || `${shortDate(c)}（${(c.weekday || '').charAt(0)}）`;
+  const WEATHER = { '晴': '\u2600\uFE0E', '曇': '\u2601\uFE0E', '雨': '\u2602\uFE0E', '雪': '\u2744\uFE0E' };
+  // 游戏里通用的配色：周六青色、周日红色
+  const dayTone = weekday => (/^土/.test(weekday || '') ? 'sat' : /^日/.test(weekday || '') ? 'sun' : '');
+
+  // 正月的梅花装饰（toc.txt 最后一栏写「梅」）
+  const PLUM = (() => {
+    const petals = [0, 72, 144, 216, 288].map(a => {
+      const r = a * Math.PI / 180;
+      return `<circle cx="${(6 * Math.sin(r)).toFixed(2)}" cy="${(-6 * Math.cos(r)).toFixed(2)}" r="5.4"/>`;
+    }).join('');
+    const dots = [0, 60, 120, 180, 240, 300].map(a => {
+      const r = a * Math.PI / 180;
+      return `<circle cx="${(2.3 * Math.sin(r)).toFixed(2)}" cy="${(-2.3 * Math.cos(r)).toFixed(2)}" r=".75"/>`;
+    }).join('');
+    return `<svg class="plum" viewBox="-12.5 -12.5 25 25" aria-hidden="true"><g fill="#F6A9BA" stroke="#fff" stroke-width="1">${petals}</g><circle r="3.4" fill="#fff"/><g fill="#C8102E">${dots}</g></svg>`;
+  })();
+  const PLUM_TRAIL = '<span class="plum-trail" aria-hidden="true">' + Array.from({ length: 7 }, (_, i) => `<i style="--n:${i}"></i>`).join('') + '</span>';
 
   function stampHTML(meta, withTitle = true) {
     const n = { i: 0 };
@@ -266,13 +291,17 @@
     if (meta.date) {
       const en = WEEKDAY_EN[meta.weekday] || '';
       const k = (meta.weekday || '').charAt(0);
-      html += `<span class="stamp-row big">${tiles(shortDate(meta), seed + 'd', n)}</span>`;
+      const tone = dayTone(meta.weekday);
+      const plum = meta.deco === '梅';
+      html += `<span class="stamp-row big">${plum ? PLUM : ''}${tiles(shortDate(meta), seed + 'd', n)}</span>`;
       html += '<span class="stamp-sub"><span class="stamp-row mid">';
-      if (en) html += `<span class="tile v-ink band" style='--i:${n.i++};--r:-4deg;font-family:"Arial Black", Impact, sans-serif;font-weight:900'>${mixCase(en)}</span>`;
-      if (k) html += tiles(k, seed + 'k', n, 'v-red');
-      html += `</span><span class="stamp-row mid">${tiles(meta.time || '', seed + 't', n)}</span></span>`;
+      if (en) html += `<span class="tile ${tone === 'sat' ? 'v-ink-teal' : tone === 'sun' ? 'v-ink-red' : 'v-ink'} band" style='--i:${n.i++};--r:-4deg;font-family:"Arial Black", Impact, sans-serif;font-weight:900'>${mixCase(en)}</span>`;
+      if (k) html += tiles(k, seed + 'k', n, tone === 'sat' ? 'v-teal' : 'v-red');
+      if (meta.weather) html += `<span class="tile v-paper wx" style='--i:${n.i++};--r:8deg' title="${esc(meta.weather)}">${WEATHER[meta.weather] || esc(meta.weather)}</span>`;
+      if (plum) html += PLUM;
+      html += `</span><span class="stamp-row mid">${plum ? PLUM_TRAIL : ''}${tiles(meta.time || '', seed + 't', n)}</span></span>`;
     }
-    if (withTitle || !meta.date) {
+    if (meta.title && (withTitle || !meta.date)) {
       html += `<span class="stamp-row title">${tiles(meta.title.replace(/^coop/i, 'COOP'), seed + 'T', n)}</span>`;
     }
     return html;
@@ -452,7 +481,7 @@
   /* ================= 首页 ================= */
 
   function routeHTML(hereId) {
-    return TOC.map((c, i) => {
+    return TOC.filter(c => c.term !== 's3').map((c, i) => {
       const wave = Math.sin(i * 1.15);
       const xd = 22 + 17 * wave, xm = 9 + 6 * wave;
       const when = c.date ? `${c.date}　${c.weekday}　${c.time}　` : '';
@@ -464,6 +493,134 @@
         : `<div class="stop-link">${inner}</div>`;
       return `<li class="stop${c.file ? '' : ' off'}${here ? ' here' : ''}" style="--xd:${xd.toFixed(1)}%;--xm:${xm.toFixed(1)}%"><svg class="pin" aria-hidden="true"><use href="#pin"/></svg>${link}</li>`;
     }).join('');
+  }
+
+  const MONTH_EN = ['JANUARY', 'FEBRUARY', 'MARCH', 'APRIL', 'MAY', 'JUNE', 'JULY', 'AUGUST', 'SEPTEMBER', 'OCTOBER', 'NOVEMBER', 'DECEMBER'];
+  const S3_MONTHS = [[2016, 12], [2017, 1], [2017, 2]];
+
+  // 三学期日历：仿游戏里的行程日历，一次看一个月，L / R 翻月
+  const WD_EN = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
+  const WD_JA = '日月火水木金土';
+
+  function calendarDays(y, m) {
+    const byDate = new Map(TOC.filter(c => c.term === 's3' && c.date).map(c => [c.date, c]));
+    const first = new Date(y, m - 1, 1).getDay();
+    const days = new Date(y, m, 0).getDate();
+    return { first, days, at: d => byDate.get(`${m}.${d}`) };
+  }
+
+  function calendarGrid(k, hereId) {
+    const [y, m] = S3_MONTHS[k];
+    const { first, days, at } = calendarDays(y, m);
+    let cells = '<li class="d blank" aria-hidden="true"></li>'.repeat(first);
+    for (let d = 1; d <= days; d++) {
+      const wd = (first + d - 1) % 7;
+      const tone = wd === 0 ? ' sun' : wd === 6 ? ' sat' : '';
+      const c = at(d);
+      const r = ((hash(`${m}.${d}`) % 7) - 3) * .8;
+      if (!c) { cells += `<li class="d${tone}" style="--r:${r}deg;--n:${first + d}" aria-hidden="true"><span>${d}</span></li>`; continue; }
+      const here = c.id === hereId;
+      const label = [`${m}月${d}日`, c.weekday, c.time, c.weather].filter(Boolean).join(' ');
+      const inner = `<b>${d}</b>${c.weather ? `<i class="wx" aria-hidden="true">${WEATHER[c.weather] || ''}</i>` : ''}${c.deco === '梅' ? PLUM : ''}${here ? '<em class="last" aria-hidden="true">上次</em>' : ''}`;
+      cells += `<li class="d has${tone}${here ? ' here' : ''}" style="--r:${r}deg;--n:${first + d}">${c.file
+        ? `<a href="#/read/${encodeURIComponent(c.id)}" data-cid="${esc(c.id)}" aria-label="${esc(label)}${here ? '（上次读到这里）' : ''}">${inner}</a>`
+        : `<span data-cid="${esc(c.id)}">${inner}</span>`}</li>`;
+    }
+    return cells;
+  }
+
+  function calendarSide(c, k) {
+    const [, m] = S3_MONTHS[k];
+    const { days, at } = calendarDays(...S3_MONTHS[k]);
+    if (!c) {
+      const any = Array.from({ length: days }, (_, i) => at(i + 1)).some(Boolean);
+      return { sel: `${m}月`, body: `<p class="cal-empty">${any ? '选一个红框里的日子' : '这个月还没有收录剧情'}</p>` };
+    }
+    const [mm, dd] = c.date.split('.');
+    const go = c.file
+      ? `<a class="cal-go" href="#/read/${encodeURIComponent(c.id)}">阅读这一天</a>`
+      : '<span class="cal-go off">尚未收录</span>';
+    return {
+      sel: `${mm}月　${dd}日（${(c.weekday || '').charAt(0)}）`,
+      body: `<p class="cal-info"><b lang="ja">${esc(c.time || '')}</b>${c.weather ? `<span class="wx">${WEATHER[c.weather] || ''}</span><span lang="ja">${esc(c.weather)}</span>` : ''}</p>${go}`,
+    };
+  }
+
+  function calendarHTML() {
+    return `<div class="cal-board"><ol class="cal-wds" aria-hidden="true">${WD_EN.map((w, i) => `<li class="${i === 0 ? 'sun' : i === 6 ? 'sat' : ''}">${w}</li>`).join('')}</ol><ol class="cal-days"></ol></div>
+      <div class="cal-side">
+        <p class="cal-year"><span></span>年</p>
+        <div class="cal-nav"><button type="button" class="cal-lr" data-dir="-1" aria-label="上个月">L</button><p class="cal-m" aria-live="polite"><b></b>月</p><button type="button" class="cal-lr" data-dir="1" aria-label="下个月">R</button></div>
+        <p class="cal-sel"></p>
+        <div class="cal-detail"></div>
+        <p class="cal-ask">要查看什么时候的剧情？</p>
+      </div>`;
+  }
+
+  function setupCalendar(cal, hereId) {
+    cal.innerHTML = calendarHTML();
+    const s3 = TOC.filter(c => c.term === 's3' && c.date);
+    const monthOf = c => S3_MONTHS.findIndex(([, m]) => m === +c.date.split('.')[0]);
+    const here = s3.find(c => c.id === hereId);
+    let k = here ? monthOf(here) : Math.max(0, S3_MONTHS.findIndex(([, m]) => s3.some(c => +c.date.split('.')[0] === m)));
+    const grid = $('.cal-days', cal);
+
+    const select = c => {
+      const side = calendarSide(c, k);
+      $('.cal-sel', cal).textContent = side.sel;
+      $('.cal-detail', cal).innerHTML = side.body;
+      $$('.d.sel', grid).forEach(el => el.classList.remove('sel'));
+      if (c) $(`[data-cid="${CSS.escape(c.id)}"]`, grid)?.parentElement.classList.add('sel');
+    };
+    const show = (to, dir) => {
+      k = Math.min(S3_MONTHS.length - 1, Math.max(0, to));
+      const [, m] = S3_MONTHS[k];
+      // 和游戏一样不写具体年份
+      $('.cal-year span', cal).textContent = '20XX';
+      $('.cal-m b', cal).textContent = m;
+      grid.setAttribute('aria-label', `${m}月`);
+      grid.innerHTML = calendarGrid(k, hereId);
+      $$('.cal-lr', cal).forEach(b => { b.disabled = k + +b.dataset.dir < 0 || k + +b.dataset.dir >= S3_MONTHS.length; });
+      const inMonth = s3.filter(c => monthOf(c) === k);
+      select(inMonth.find(c => c.id === hereId) || inMonth[0] || null);
+      if (dir && motionOK()) {
+        grid.classList.remove('slide-l', 'slide-r');
+        void grid.offsetWidth;
+        grid.classList.add(dir > 0 ? 'slide-r' : 'slide-l');
+      }
+    };
+    cal.addEventListener('click', e => {
+      const b = e.target.closest('.cal-lr');
+      if (b && !b.disabled) show(k + +b.dataset.dir, +b.dataset.dir);
+    });
+    const pick = e => {
+      const el = e.target.closest('[data-cid]');
+      if (el) select(TOC.find(c => c.id === el.dataset.cid));
+    };
+    grid.addEventListener('pointerover', pick);
+    grid.addEventListener('focusin', pick);
+    cal.addEventListener('keydown', e => {
+      if (e.target.closest('input, textarea')) return;
+      if (e.key === 'ArrowLeft' && k > 0 && !e.target.closest('.cal-days')) { show(k - 1, -1); }
+      if (e.key === 'ArrowRight' && k < S3_MONTHS.length - 1 && !e.target.closest('.cal-days')) { show(k + 1, 1); }
+    });
+    show(k, 0);
+    if (motionOK()) {
+      // 进入视野时，数字一个个拍上去
+      cal.classList.add('anim');
+      onView([cal], () => cal.classList.add('open'), { threshold: .2 });
+    }
+  }
+
+  function setTocTerm(main, term) {
+    $$('[data-term]', main).forEach(b => {
+      const on = b.dataset.term === term;
+      b.setAttribute('aria-selected', String(on));
+      b.tabIndex = on ? 0 : -1;
+    });
+    $('#panel-coop', main).hidden = term !== 'coop';
+    $('#panel-s3', main).hidden = term !== 's3';
+    $('#toc-title span', main).textContent = term === 's3' ? 'Calendar' : 'Route';
   }
 
   function smoothPath(p) {
@@ -558,15 +715,29 @@
     const lastIdx = last ? TOC.findIndex(c => c.id === last.id && c.file) : -1;
     const cta = $('[data-resume]', main);
     if (lastIdx >= 0) {
-      cta.textContent = `继续读 ${TOC[lastIdx].title}`;
+      cta.textContent = `继续读 ${titleOf(TOC[lastIdx])}`;
       cta.href = `#/read/${encodeURIComponent(last.id)}${last.anchor ? '/' + last.anchor : ''}`;
     } else {
       const first = TOC.find(c => c.file);
       if (first) cta.href = `#/read/${encodeURIComponent(first.id)}`;
     }
 
-    $('#route', main).innerHTML = routeHTML(lastIdx >= 0 ? TOC[lastIdx].id : null);
-    setupRoute($('.route-wrap', main), lastIdx);
+    const hereId = lastIdx >= 0 ? TOC[lastIdx].id : null;
+    $('#route', main).innerHTML = routeHTML(hereId);
+    setupRoute($('.route-wrap', main), TOC.filter(c => c.term !== 's3').findIndex(c => c.id === hereId));
+    setupCalendar($('#cal', main), hereId);
+    setTocTerm(main, store.get('tocTerm', lastIdx >= 0 ? TOC[lastIdx].term : 'coop'));
+    $('.toc-tabs', main).addEventListener('click', e => {
+      const b = e.target.closest('[data-term]');
+      if (b) { store.set('tocTerm', b.dataset.term); setTocTerm(main, b.dataset.term); }
+    });
+    $('.toc-tabs', main).addEventListener('keydown', e => {
+      if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
+      const term = $('[aria-selected="true"]', main).dataset.term === 'coop' ? 's3' : 'coop';
+      store.set('tocTerm', term);
+      setTocTerm(main, term);
+      $(`[data-term="${term}"]`, main).focus();
+    });
     initTilt(main);
     const today = new Date();
     $('[data-today]', main).textContent = `令和${today.getFullYear() - 2018}.${today.getMonth() + 1}.${today.getDate()}`;
@@ -583,14 +754,14 @@
     let html = '';
     if (next) {
       const stamp = `<div class="stamp" aria-hidden="true">${stampHTML(next, false)}</div>`;
-      const title = `<span class="next-title" lang="ja">${esc(next.title)}</span>`;
+      const title = `<span class="next-title" lang="ja">${esc(next.title || '三学期')}</span>`;
       html += next.file
         ? `<a class="next-card" href="#/read/${encodeURIComponent(next.id)}" data-next>${stamp}<span class="next-label">下一篇</span>${title}</a>`
         : `<div class="next-card off">${stamp}<span class="next-label">下一篇（样章未收录）</span>${title}</div>`;
     } else {
       html += '<div class="next-card off"><span class="next-label">已经是最后一篇</span><span class="next-title">感谢阅读</span></div>';
     }
-    if (prev) html += `<a class="prev-link" href="#/read/${encodeURIComponent(prev.id)}">上一篇：<span lang="ja">${esc(prev.title)}</span></a>`;
+    if (prev) html += `<a class="prev-link" href="#/read/${encodeURIComponent(prev.id)}">上一篇：<span lang="ja">${esc(titleOf(prev))}</span></a>`;
     return html;
   }
 
@@ -650,7 +821,7 @@
     // 章节标题离开视野后，页眉显示当前章节
     const chip = $('.now-chip');
     chip.innerHTML = meta.date
-      ? `<b>${esc(shortDate(meta))}</b><span lang="ja">${esc(meta.weekday.charAt(0))}</span><span lang="ja">${esc(meta.title)}</span>`
+      ? `<b>${esc(shortDate(meta))}</b><span lang="ja">${esc(meta.weekday.charAt(0))}</span><span lang="ja">${esc(meta.title || meta.time)}</span>`
       : `<span lang="ja">${esc(meta.title)}</span>`;
     const stamp = $('.ch-head', reader);
     const io = new IntersectionObserver(([e]) => { chip.hidden = e.isIntersecting; }, { rootMargin: `-${Math.round(headH())}px 0px 0px 0px` });
@@ -689,8 +860,9 @@
     const frag = $('#tpl-reader').content.cloneNode(true);
     const title = $('#ch-title', frag);
     title.innerHTML = stampHTML(meta);
-    title.setAttribute('aria-label', [meta.date && `${meta.date} ${meta.weekday} ${meta.time}`, meta.title].filter(Boolean).join(' '));
-    $('.ch-place', frag).innerHTML = `<span class="stop-ico" aria-hidden="true">${esc(meta.icon)}</span>${esc(meta.place)}`;
+    title.setAttribute('aria-label', [meta.date && `${meta.date} ${meta.weekday} ${meta.time}`, meta.weather, meta.title].filter(Boolean).join(' '));
+    if (meta.place) $('.ch-place', frag).innerHTML = `<span class="stop-ico" aria-hidden="true">${esc(meta.icon)}</span>${esc(meta.place)}`;
+    else $('.ch-place', frag).remove();
     $('.ch-body', frag).innerHTML = renderBlocks(ch);
     $('.ch-end', frag).innerHTML = endHTML(idx);
     const main = $('#main');
@@ -701,7 +873,7 @@
     bindReader(reader, idx);
     watchReader(reader, meta);
     if (window.Comments) cleanups.push(window.Comments.mount(reader, meta));
-    document.title = `${meta.title}｜${SITE}`;
+    document.title = `${titleOf(meta)}｜${SITE}`;
     if (anchor) jumpTo(anchor);
     else {
       window.scrollTo(0, 0);
@@ -861,7 +1033,7 @@
     const lines = [];
     if (ja) lines.push((names[0] ? names[0] + '：' : '') + ja);
     if (zh) lines.push((names[1] ? names[1] + '：' : '') + zh);
-    lines.push(`（明智 coop 日中对照｜${meta ? meta.title : ''}）`);
+    lines.push(`（明智 coop 日中对照｜${meta ? titleOf(meta) : ''}）`);
     return lines.join('\n');
   }
 
@@ -875,7 +1047,8 @@
     const list = await loadAll();
     index = [];
     for (const ch of list) {
-      const { id, title } = ch.meta;
+      const { id } = ch.meta;
+      const title = titleOf(ch.meta);
       const push = (anchor, who, ja, zh) => index.push({ id, title, anchor, who, ja, zh, nja: norm(ja), nzh: norm(zh) });
       const turns = (arr, pre, bid) => arr.forEach((t, j) => {
         if (t.note) push(bid, '注', '', t.note);
@@ -957,8 +1130,10 @@
     const dlg = $('#chapters');
     $('.drawer-list', dlg).innerHTML = TOC.map((c, i) => {
       const date = c.date ? `${shortDate(c)} ${c.weekday.charAt(0)}` : '';
-      const inner = `<span class="dl-date" lang="ja">${esc(date)}</span><span><span class="dl-title" lang="ja">${esc(c.title)}</span>${c.file ? '' : '（样章未收录）'}</span>`;
-      return `<li>${c.file
+      const name = c.title || [c.time, c.weather].filter(Boolean).join('・');
+      const inner = `<span class="dl-date" lang="ja">${esc(date)}</span><span><span class="dl-title" lang="ja">${esc(name)}</span>${c.file ? '' : '（样章未收录）'}</span>`;
+      const sep = i === 0 || c.term !== TOC[i - 1].term ? `<li class="dl-sep">${c.term === 's3' ? '三学期' : '二学期 · coop'}</li>` : '';
+      return `${sep}<li>${c.file
         ? `<a href="#/read/${encodeURIComponent(c.id)}"${i === currentIdx ? ' aria-current="page"' : ''}>${inner}</a>`
         : `<span class="off">${inner}</span>`}</li>`;
     }).join('');
@@ -1073,7 +1248,7 @@
         const idx = TOC.findIndex(c => c.id === parts[1]);
         const meta = TOC[idx];
         if (!meta) await swap(() => showMessage('没有找到这一篇。', '回到目录'));
-        else if (!meta.file) await swap(() => showMessage(`「${meta.title}」还没有收录进网站。`, '回到目录'));
+        else if (!meta.file) await swap(() => showMessage(`「${titleOf(meta)}」还没有收录进网站。`, '回到目录'));
         else {
           const ch = await loadChapter(meta);
           const day = pendingDay && pendingDay.to === meta.id && !firstRoute && motionOK() ? pendingDay : null;

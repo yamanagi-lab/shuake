@@ -7,8 +7,8 @@
 <meta name="description" content="P5R 明智 coop 剧情日文原文与中文参考译文对照。">
 <title>P5R主明文本收录</title>
 <link rel="icon" href="assets/crest-96.png">
-<link rel="stylesheet" href="assets/style.css?v=19">
-<link rel="stylesheet" href="assets/comments.css?v=19">
+<link rel="stylesheet" href="assets/style.css?v=27">
+<link rel="stylesheet" href="assets/comments.css?v=27">
 </head>
 <body>
 
@@ -106,10 +106,19 @@
 
   <section class="toc" id="toc" aria-labelledby="toc-title">
     <h2 class="sec-title" id="toc-title">目录<span lang="en">Route</span></h2>
-    <div class="route-wrap">
-      <svg class="route-line" aria-hidden="true"><path class="route-base"/><path class="route-done"/></svg>
-      <svg class="route-car" aria-hidden="true"><use href="#catcar"/></svg>
-      <ol class="route" id="route"></ol>
+    <div class="toc-tabs" role="tablist" aria-label="目录分类">
+      <button type="button" role="tab" id="tab-coop" aria-controls="panel-coop" data-term="coop">二学期 · coop</button>
+      <button type="button" role="tab" id="tab-s3" aria-controls="panel-s3" data-term="s3">三学期</button>
+    </div>
+    <div class="toc-panel" id="panel-coop" role="tabpanel" aria-labelledby="tab-coop">
+      <div class="route-wrap">
+        <svg class="route-line" aria-hidden="true"><path class="route-base"/><path class="route-done"/></svg>
+        <svg class="route-car" aria-hidden="true"><use href="#catcar"/></svg>
+        <ol class="route" id="route"></ol>
+      </div>
+    </div>
+    <div class="toc-panel" id="panel-s3" role="tabpanel" aria-labelledby="tab-s3" hidden>
+      <div class="cal" id="cal"></div>
     </div>
   </section>
 
@@ -214,7 +223,7 @@
   <form method="dialog" class="dlg-actions"><button class="btn-plain">完成</button></form>
 </dialog>
 
-<script src="assets/comments.js?v=19"></script>
-<script src="assets/app.js?v=19"></script>
+<script src="assets/comments.js?v=27"></script>
+<script src="assets/app.js?v=27"></script>
 </body>
 </html>

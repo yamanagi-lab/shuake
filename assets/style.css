@@ -11,6 +11,7 @@
   --panel: #E3E3DF;
   --red: #C8102E;
   --red-fixed: #D0102B;
+  --teal-fixed: #14B89C;
   --choice-bg: #000;
   --choice-fg: #FFF;
   --mark: rgba(200, 16, 46, .16);
@@ -362,6 +363,94 @@ a.stop-link:hover .stop-meta, a.stop-link:focus-visible .stop-meta { color: inhe
 .stop.off .stop-link { color: var(--ink-soft); }
 .stop-tag { margin-left: .6em; padding: 0 .45em; font-family: var(--sans-zh); font-size: .72rem; font-weight: 400; vertical-align: .2em; border: 1px solid var(--rule); }
 .stop.here .stop-tag { border-color: var(--red); color: var(--red); }
+
+/* 目录切换：二学期 coop 路线 / 三学期日历 */
+.toc-tabs { display: flex; gap: .9rem; margin: 0 0 1.6rem .4rem; }
+.toc-tabs button { position: relative; isolation: isolate; padding: .3rem 1.3rem; border: 0; background: none; color: var(--ink); font-weight: 700; font-size: .95rem; cursor: pointer; }
+.toc-tabs button::before { content: ""; position: absolute; inset: 0; z-index: -1; border: 2px solid var(--choice-bg); transform: skewX(-12deg); transition: background-color .15s; }
+.toc-tabs button[aria-selected="true"] { color: #fff; }
+.toc-tabs button[aria-selected="true"]::before { background: var(--red-fixed); border-color: var(--red-fixed); }
+.toc-tabs button:not([aria-selected="true"]):hover { color: var(--red); }
+.toc-tabs button:focus-visible { outline: 2px solid var(--red); outline-offset: 4px; }
+.toc-panel[hidden] { display: none; }
+
+/* 三学期日历：参考游戏里的行程日历 */
+.cal {
+  --teal: var(--teal-fixed);
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 15.5rem;
+  margin: 0 .4rem;
+  background: #0E0E0E;
+  color: #F2F2F0;
+  overflow: hidden;
+  isolation: isolate;
+}
+.cal-board { padding: 1.2rem .4rem 1.6rem 1.4rem; }
+.cal-wds, .cal-days { display: grid; grid-template-columns: repeat(7, 1fr); list-style: none; margin: 0; padding: 0; text-align: center; }
+.cal-wds li { font: italic 900 1.05rem/1 "Arial Black", Impact, sans-serif; letter-spacing: -.02em; color: #F2F2F0; transform: rotate(-4deg); padding-bottom: .4rem; }
+.cal-wds .sun, .cal .d.sun { color: #FF2D3F; }
+.cal-wds .sat, .cal .d.sat { color: var(--teal); }
+.cal-days { row-gap: .1rem; }
+.cal .d { position: relative; font: 900 clamp(1.6rem, 3.6vw, 2.7rem)/1.05 "Arial Black", Futura, Impact, sans-serif; letter-spacing: -.06em; color: #F2F2F0; }
+.cal .d > span, .cal .d > a { display: block; position: relative; padding: .05em 0 .12em; transform: rotate(var(--r)); }
+.cal .d:not(.has) > span { opacity: .3; }
+.cal .d.has > a, .cal .d.has > span { color: inherit; text-decoration: none; transition: transform .2s var(--ease-pop); }
+.cal .d.has b { position: relative; z-index: 1; font-weight: 900; }
+.cal .d.has > a::before, .cal .d.has > span::before { content: ""; position: absolute; inset: .02em .04em .1em; z-index: 0; border: .07em solid #FF2D3F; transform: skewX(-8deg); }
+.cal .d.has > a:hover, .cal .d.has > a:focus-visible { transform: rotate(0) scale(1.15); outline: none; }
+.cal .d.sel::after { content: ""; position: absolute; left: 12%; right: 12%; bottom: -.08em; height: .08em; background: #F2F2F0; border-radius: 1px; box-shadow: -.1em 0 0 -.02em #F2F2F0, .1em 0 0 -.02em #F2F2F0; }
+.cal .d .wx { position: absolute; top: -.15em; right: -.05em; z-index: 2; font-style: normal; font-size: .36em; line-height: 1; color: #F2F2F0; }
+.cal .d .plum { position: absolute; left: -.12em; top: -.1em; width: .55em; height: .55em; z-index: 2; }
+.cal .d .last { position: absolute; left: 50%; top: 50%; z-index: 0; padding: .1em .4em; background: #FF2D3F; color: #fff; font: italic 900 .32em/1 "PingFang SC", sans-serif; letter-spacing: .1em; white-space: nowrap; transform: translate(-50%, -50%) rotate(-14deg) scale(1.5); clip-path: polygon(4% 0, 100% 8%, 96% 100%, 0 92%); }
+.cal .d.here b { color: #fff; }
+
+/* 右侧白色斜切面板 */
+.cal-side { position: relative; z-index: 1; display: flex; flex-direction: column; gap: .6rem; padding: 1.1rem 1rem 1.2rem 2.6rem; color: #0E0E0E; }
+.cal-side::before { content: ""; position: absolute; inset: 0 0 0 0; z-index: -1; background: #F2F2F0; clip-path: polygon(16% 0, 100% 0, 100% 100%, 0 100%); }
+.cal-year { margin: 0 0 -.2rem 1.4rem; font: italic 900 1.15rem/1 "Arial Black", Impact, sans-serif; }
+.cal-nav { display: flex; align-items: center; gap: .6rem; margin-left: .4rem; }
+.cal-m { margin: 0; font: 900 1.4rem/1 var(--sans-zh); }
+.cal-m b { font: italic 900 3.4rem/1 "Arial Black", Impact, sans-serif; letter-spacing: -.04em; }
+.cal-lr { display: grid; place-items: center; width: 1.9rem; height: 1.5rem; border: 0; background: #0E0E0E; color: #F2F2F0; font: 900 .85rem/1 "Arial Black", sans-serif; cursor: pointer; clip-path: polygon(8% 0, 100% 6%, 92% 100%, 0 94%); }
+.cal-lr:hover:not(:disabled), .cal-lr:focus-visible { background: #FF2D3F; outline: none; }
+.cal-lr:disabled { opacity: .25; cursor: default; }
+.cal-sel { margin: .4rem -1rem 0 -.6rem; padding: .35rem .9rem; background: #0E0E0E; color: #F2F2F0; font-weight: 700; letter-spacing: .06em; clip-path: polygon(3% 0, 100% 0, 100% 100%, 0 100%); }
+.cal-detail { flex: 1; }
+.cal-info { display: flex; align-items: baseline; gap: .5rem; margin: .4rem 0 .9rem; font-size: 1.05rem; }
+.cal-info b { font: 900 1.6rem/1 var(--sans-ja); }
+.cal-info .wx { font-size: 1.3rem; }
+.cal-go { position: relative; isolation: isolate; display: inline-block; padding: .35rem 1.3rem; color: #fff; font-weight: 700; text-decoration: none; }
+.cal-go::before { content: ""; position: absolute; inset: 0; z-index: -1; background: #FF2D3F; transform: skewX(-12deg); transition: background-color .15s; }
+.cal-go:hover::before, .cal-go:focus-visible::before { background: #0E0E0E; }
+.cal-go:focus-visible { outline: none; }
+.cal-go.off { color: #0E0E0E; }
+.cal-go.off::before { background: #CACAC5; }
+.cal-empty { margin: .6rem 0; font-size: .9rem; color: #66666A; }
+.cal-ask { margin: 0 0 0 -1.2rem; align-self: flex-start; padding: .2rem .6rem; background: #0E0E0E; color: #F2F2F0; font-size: .8rem; transform: rotate(-3deg); }
+
+@media (prefers-reduced-motion: no-preference) {
+  .cal.anim:not(.open) .d { opacity: 0; }
+  .cal.anim.open .d { animation: cal-slap .38s var(--ease-pop) both; animation-delay: calc(var(--n, 0) * 22ms); }
+  @keyframes cal-slap { from { opacity: 0; transform: scale(1.8) rotate(-12deg); } }
+  .cal-days.slide-r { animation: cal-slide-r .35s var(--ease-out); }
+  .cal-days.slide-l { animation: cal-slide-l .35s var(--ease-out); }
+  @keyframes cal-slide-r { from { opacity: 0; transform: translateX(2.5rem) skewX(-8deg); } }
+  @keyframes cal-slide-l { from { opacity: 0; transform: translateX(-2.5rem) skewX(8deg); } }
+}
+
+/* 正月梅花 */
+.stamp-row { position: relative; }
+.stamp .plum { position: relative; z-index: 3; width: 1.15em; height: 1.15em; flex: none; margin: -.3em -.35em 0 -.2em; align-self: flex-start; filter: drop-shadow(0 .04em 0 rgba(0, 0, 0, .25)); }
+.stamp-row.big > .plum { position: absolute; left: -.3em; bottom: -.14em; width: .62em; height: .62em; margin: 0; }
+.plum-trail { position: absolute; z-index: 3; left: -.2em; top: .55em; width: 0; height: 0; pointer-events: none; }
+.plum-trail i { position: absolute; width: .34em; height: .34em; left: calc(var(--n) * -.36em); top: calc(var(--n) * .24em); background: #F27C95; transform: rotate(14deg); box-shadow: 0 0 0 .03em #fff; }
+.plum-trail i:nth-child(odd) { background: #fff; box-shadow: 0 0 0 .03em rgba(0, 0, 0, .2); }
+
+/* 天气小块 */
+.tile.wx { font-family: "Apple Symbols", "Segoe UI Symbol", sans-serif; }
+.dl-sep { margin: 1rem 0 .3rem; padding-left: .7rem; font-size: .78rem; font-weight: 700; color: var(--red); letter-spacing: .1em; }
+.dl-sep:first-child { margin-top: 0; }
 a.stop-link:hover .stop-tag { border-color: currentColor; color: inherit; }
 
 .log { max-width: 52rem; margin: 0 auto; padding-top: 1.4rem; border-top: 1px solid var(--rule); }
@@ -392,6 +481,8 @@ a.stop-link:hover .stop-tag { border-color: currentColor; color: inherit; }
 .tile.v-out { background: #fff; color: #000; outline: .045em solid #000; outline-offset: -.13em; }
 .tile.v-red { background: var(--red-fixed); color: #fff; }
 .tile.v-ink-red { background: #000; color: var(--red-fixed); }
+.tile.v-teal { background: var(--teal-fixed); color: #fff; }
+.tile.v-ink-teal { background: #000; color: var(--teal-fixed); }
 .tile.band { padding: .12em .3em .06em; letter-spacing: .02em; }
 .tile-gap { width: .3em; }
 @media (prefers-reduced-motion: no-preference) {
@@ -864,6 +955,17 @@ a:hover .dl-date, a:focus-visible .dl-date { color: inherit; }
 /* ---------- 窄屏 ---------- */
 @media (max-width: 760px) {
   :root { --gutter: 1rem; }
+  .cal { grid-template-columns: 1fr; margin: 0; }
+  .cal-side { order: -1; padding: .9rem 16px .9rem; }
+  .cal-side::before { clip-path: polygon(0 0, 100% 0, 100% 88%, 0 100%); }
+  .cal-year, .cal-nav { margin-left: 0; }
+  .cal-sel { margin: .2rem -16px 0 0; }
+  .cal-detail { margin-left: 0; display: flex; align-items: center; gap: 1rem; }
+  .cal-info { margin: 0; }
+  .cal-ask { display: none; }
+  .cal-board { padding: 1rem 6px 1.4rem; }
+  .cal .d { font-size: 1.55rem; }
+  .toc-tabs { margin-left: 16px; }
   .sns { padding: .9rem .85rem 1.5rem; }
   .msg { max-width: 92%; }
   main { padding: 1rem 0 2rem; }
