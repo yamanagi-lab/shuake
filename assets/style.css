@@ -391,6 +391,7 @@ a.stop-link:hover .stop-tag { border-color: currentColor; color: inherit; }
 .tile.v-gray { background: #8D8D8A; color: #fff; }
 .tile.v-out { background: #fff; color: #000; outline: .045em solid #000; outline-offset: -.13em; }
 .tile.v-red { background: var(--red-fixed); color: #fff; }
+.tile.v-ink-red { background: #000; color: var(--red-fixed); }
 .tile.band { padding: .12em .3em .06em; letter-spacing: .02em; }
 .tile-gap { width: .3em; }
 @media (prefers-reduced-motion: no-preference) {

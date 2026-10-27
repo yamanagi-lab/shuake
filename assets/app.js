@@ -234,7 +234,7 @@
     'Futura, "Century Gothic", "Trebuchet MS", sans-serif',
   ];
   const CJK_FONTS = ['var(--sans-ja)', 'var(--serif-ja)'];
-  const VARIANTS = ['v-ink', 'v-paper', 'v-gray', 'v-out', 'v-ink', 'v-paper'];
+  const VARIANTS = ['v-ink', 'v-paper', 'v-red', 'v-out', 'v-ink', 'v-ink-red'];
 
   function hash(str) {
     let h = 2166136261;
